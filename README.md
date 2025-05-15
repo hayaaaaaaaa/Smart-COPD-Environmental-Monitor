@@ -52,67 +52,80 @@ HealthGuardian is an innovative IoT wearable system designed to empower individu
 ## Setup Instructions
 
 ### 1. Hardware Setup:
-*   Connect the components as per the provided in the textual description below:
-    *   I. Power Distribution (Using a Breadboard):
-          Battery & Charger:
-            *   Connect your Lithium Battery to a TP4056 charging module (B+ to battery +, B- to battery -).
-            *   The TP4056 OUT+ will be your main 5V source. Connect it to the 5V power rail (+) of your breadboard.
-            *   The TP4056 OUT- will be your main ground. Connect it to the ground rail (-) of your breadboard.
-          ESP32 Power:
-            *   Connect ESP32 VIN pin to the breadboard's 5V rail (+).
-            *   Connect an ESP32 GND pin to the breadboard's ground rail (-).
-          3.3V Rail (for 3.3V sensors):
-            *   Connect the ESP32 3V3 pin to a separate 3.3V power rail (+) on your breadboard (if your breadboard has two power rails per side, use one for 5V and                   the other for 3.3V). If not, you'll connect 3.3V components directly from the ESP32 3V3 pin or use a dedicated row on the breadboard.
-    *   II. I2C Devices (MAX30100 & ADXL345):
-            *   I2C devices share the same data (SDA) and clock (SCL) lines.
-          MAX30100:
-            *   VIN (or VCC) -> Breadboard 3.3V Rail (+) (MAX30100 is usually 3.3V)
-            *   GND -> Breadboard Ground Rail (-)
-            *   SCL -> ESP32 GPIO 22 (Default I2C SCL)
-            *   SDA -> ESP32 GPIO 21 (Default I2C SDA)
-          ADXL345:
-            *   VCC (or VIN) -> Breadboard 3.3V Rail (+) (ADXL345 is usually 3.3V)
-            *   GND -> Breadboard Ground Rail (-)
-            *   SCL -> ESP32 GPIO 22 (Shared with MAX30100)
-            *   SDA -> ESP32 GPIO 21 (Shared with MAX30100)
-            *   CS (Chip Select) -> Breadboard 3.3V Rail (+) (to enable I2C mode on most ADXL345 breakouts)
-            *   SDO (Data Out / Address Select) -> Breadboard Ground Rail (-) (Often sets the I2C address to 0x53. If connected to 3.3V, it might be 0x1D. Check your                 breakout's datasheet.)
-    *   III. Servo Motor:
-            *   Signal Pin (usually Orange or Yellow) -> ESP32 GPIO 13 (or your chosen servo pin from the code)
-            *   VCC / Power Pin (usually Red) -> Breadboard 5V Rail (+).
-      Important: Do NOT power the servo directly from an ESP32 GPIO pin or the ESP32's 3.3V output. It needs more current. The 5V from the TP4056 output should be          sufficient.
-            *   GND Pin (usually Brown or Black) -> Breadboard Ground Rail (-) (This ensures a common ground with the ESP32).
-    *   IV. LED (Visual Alert):
-            *   LED Anode (longer leg) -> A current-limiting Resistor (e.g., 220-330 Ohms).
-            *   Other end of the Resistor -> ESP32 GPIO Pin (e.g., GPIO 2, GPIO 4, or any unused digital pin you define in your code for an alert LED).
-            *   LED Cathode (shorter leg, flat side) -> Breadboard Ground Rail (-).
-    *   V. Water Pump & Relay Module:
-          The water pump likely requires more current/voltage than an ESP32 GPIO pin can safely provide. A relay acts as an electrically controlled switch.
-          Relay Module Power:
-            *   VCC -> Breadboard 5V Rail (+) (Most common relay modules for Arduino/ESP32 operate on 5V logic power).
-            *   GND -> Breadboard Ground Rail (-).
-            *   IN (or SIG) (Signal Pin) -> ESP32 GPIO Pin (e.g., GPIO 12, GPIO 14, or any unused digital pin you define in code to control the pump).
-            *   Relay Switching Circuit (for the Pump):
-          The relay will have three screw terminals (or pins) for the load:
-            *   COM (Common)
-            *   NO (Normally Open)
-            *   NC (Normally Closed)
-          Pump Power Source: The pump might need its own power source (e.g., another battery pack, a 5V or 6V supply) separate from the ESP32's logic power if it               draws significant current. Let's assume a separate power source for the pump for safety.
-            *   Connect the Positive (+) terminal of the Pump's Power Source to one of the pump's wires.
-            *   Connect the other wire of the Pump to the Relay's NO (Normally Open) terminal.
-            *   Connect the Relay's COM (Common) terminal to the Negative (-) terminal of the Pump's Power Source.
-Crucial (if using a separate power supply for the pump): Ensure the Ground (-) of the Pump's Power Source is ALSO connected to the ESP32's/Breadboard's main Ground Rail (-). This is essential for the relay control signal to work correctly.
-How it works: When the ESP32 sends a HIGH signal to the relay's IN pin, the relay closes the connection between COM and NO, completing the circuit for the pump and turning it ON. When the signal is LOW, the connection opens, turning the pump OFF.
-    *   VI. PMS5003 Air Quality Sensor (Future Addition - UART):
-            *   VCC -> Breadboard 5V Rail (+) (PMS5003 is typically 5V logic and power).
-            *   GND -> Breadboard Ground Rail (-).
-            *   TXD (Sensor's Transmit Pin) -> ESP32 GPIO 16 (RX2) (ESP32's Second UART Receive Pin).
-            *   RXD (Sensor's Receive Pin) -> ESP32 GPIO 17 (TX2) (ESP32's Second UART Transmit Pin).
-    *   Ensure the ESP32 is powered via USB from your laptop.
-    *   Make sure all I2C devices (MAX30100, ADXL345) share common SDA (GPIO21) and SCL (GPIO22) lines.
-    *   Ensure all components share a common GND.
-    *   MAX30100 and ADXL345 VCC to ESP32 3.3V.
-    *   Servo VCC and Relay VCC to ESP32 VIN (5V from USB). Servo Signal to GPIO13. Relay IN to GPIO12 (example).
+
+Connect the components as per the textual description below. It's highly recommended to use a breadboard for these connections.
+
+**(Note: This guide assumes you are powering the ESP32 via USB from your laptop for development. If using a LiPo battery and TP4056, adjust the main 5V source accordingly.)**
+
+**I. Power Distribution (Using a Breadboard):**
+
+*   **Main Power Rails from ESP32 (when USB powered):**
+    *   Connect the **ESP32 `VIN` pin (or a pin labeled `5V`)** to the **5V power rail (+)** of your breadboard. This rail will supply 5V components.
+    *   Connect the **ESP32 `3V3` pin** to the **3.3V power rail (+)** of your breadboard (or a designated separate row). This rail will supply 3.3V components.
+    *   Connect an **ESP32 `GND` pin** to the **ground rail (-)** of your breadboard. All components *must* share this common ground.
+
+**II. I2C Devices (MAX30100 & ADXL345):**
+
+*I2C devices share the same data (SDA) and clock (SCL) lines.*
+
+*   **MAX30100 Pulse Oximeter:**
+    *   `VIN` (or `VCC`) **->** Breadboard 3.3V Rail (+)
+    *   `GND` **->** Breadboard Ground Rail (-)
+    *   `SCL` **->** ESP32 `GPIO 22` (Default I2C SCL)
+    *   `SDA` **->** ESP32 `GPIO 21` (Default I2C SDA)
+*   **ADXL345 Accelerometer:**
+    *   `VCC` (or `VIN`) **->** Breadboard 3.3V Rail (+)
+    *   `GND` **->** Breadboard Ground Rail (-)
+    *   `SCL` **->** ESP32 `GPIO 22` (Shared with MAX30100)
+    *   `SDA` **->** ESP32 `GPIO 21` (Shared with MAX30100)
+    *   `CS` (Chip Select) **->** Breadboard 3.3V Rail (+) *(to enable I2C mode on most breakouts)*
+    *   `SDO` (Data Out / Address Select) **->** Breadboard Ground Rail (-) *(Often sets I2C address to 0x53. Check your breakout's datasheet.)*
+
+**III. Servo Motor (e.g., SG90):**
+
+*   **Signal Pin** (Orange/Yellow) **->** ESP32 `GPIO 13` (or your `SERVO_PIN` definition)
+*   **VCC / Power Pin** (Red) **->** Breadboard 5V Rail (+) *(from ESP32 `VIN`/`5V`)*
+    *   *Caution: If the servo causes ESP32 instability/resets, it might be drawing too much current from the USB port. An external 5V supply for the servo (with common ground) would be more robust.*
+*   **GND Pin** (Brown/Black) **->** Breadboard Ground Rail (-)
+
+**IV. LED (Visual Alert):**
+
+*   **LED Anode** (longer leg) **->** One end of a **Resistor (220-330 Ohms)**
+*   Other end of the **Resistor** **->** ESP32 `GPIO Pin` (e.g., `GPIO 2`, or your chosen alert LED pin)
+*   **LED Cathode** (shorter leg) **->** Breadboard Ground Rail (-)
+
+**V. Water Pump & Relay Module (for Simulated Medication):**
+
+*A relay is used because the pump likely requires more current/voltage than an ESP32 GPIO pin can provide directly.*
+
+*   **Relay Module Power:**
+    *   `VCC` **->** Breadboard 5V Rail (+) *(from ESP32 `VIN`/`5V`)*
+    *   `GND` **->** Breadboard Ground Rail (-)
+    *   `IN` (or `SIG` - Signal Pin) **->** ESP32 `GPIO Pin` (e.g., `GPIO 12`, or your chosen pump control pin)
+*   **Relay Switching Circuit (for the Pump):**
+    *   *The relay typically has `COM` (Common), `NO` (Normally Open), and `NC` (Normally Closed) terminals.*
+    *   **Pump Power Source (Recommended: Separate Supply):**
+        *   Connect **Positive (+) of Pump's External Power Supply** (e.g., 2xAA batteries for a 3V pump, or a dedicated 3-6V supply) to one wire of the **Pump**.
+        *   Connect the **other wire of the Pump** to the **Relay's `NO` (Normally Open) terminal**.
+        *   Connect the **Relay's `COM` (Common) terminal** to the **Negative (-) of the Pump's External Power Supply**.
+        *   **CRUCIAL:** Connect the **Negative (-) of the Pump's External Power Supply** ALSO to the **ESP32's/Breadboard's main Ground Rail (-)**. A common ground is essential.
+    *   *(Alternative - Powering a very low-power pump from ESP32 5V - Use with extreme caution):*
+        *   *Connect one wire of the Pump to the Relay's `NO` terminal.*
+        *   *Connect the other wire of the Pump to the Breadboard 5V Rail (+).*
+        *   *Connect the Relay's `COM` terminal to the Breadboard Ground Rail (-). This is generally not recommended for motors.*
+
+**VI. PMS5003 Air Quality Sensor (Future Addition - UART):**
+
+*   `VCC` **->** Breadboard 5V Rail (+) *(from ESP32 `VIN`/`5V`)*
+*   `GND` **->** Breadboard Ground Rail (-)
+*   `TXD` (Sensor's Transmit Pin) **->** ESP32 `GPIO 16` (RX2 - ESP32's Second UART Receive)
+*   `RXD` (Sensor's Receive Pin) **->** ESP32 `GPIO 17` (TX2 - ESP32's Second UART Transmit)
+*   *(Other PMS5003 pins like SET/RESET can often be left unconnected or tied as per its datasheet for continuous mode.)*
+
+**Key Reminders:**
+*   **Double-check all VCC and GND connections for correct polarity.**
+*   **Ensure a common GND across all components connected to the ESP32.**
+*   **Use the correct voltage levels for each component (3.3V or 5V).**
 
 ### 2. Arduino IDE Setup:
 1.  Install the Arduino IDE (Version 1.8.18 or later recommended).
